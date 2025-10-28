@@ -32,40 +32,40 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
     <>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 z-30 md:hidden"
+          className="fixed inset-0 bg-black/60 z-30"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         ></div>
       )}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-slate-800 border-r border-slate-700/50 flex flex-col z-40 transform transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:relative md:translate-x-0 md:z-auto`}
+        className={`fixed top-0 right-0 h-full w-full md:w-80 bg-slate-800 border-l border-slate-700/50 flex flex-col z-40 transform transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
       >
         <div className="p-4 flex justify-between items-center border-b border-slate-700">
-          <h2 className="text-lg font-semibold">Trip History</h2>
           <div className="flex items-center gap-2">
-            <button
-                onClick={onNewTrip}
-                className="flex items-center gap-2 px-3 py-1.5 bg-cyan-600/50 hover:bg-cyan-600/80 rounded-md text-sm font-semibold transition-colors"
-                title="Start a new trip"
-            >
-                <PlusIcon className="w-4 h-4" />
-                <span>New</span>
-            </button>
             <button 
               onClick={() => setIsOpen(false)}
-              className="md:hidden p-1"
-              aria-label="Close menu"
+              className="p-1 hover:bg-slate-700 rounded-md transition-colors"
+              aria-label="סגור תפריט"
             >
               <CloseIcon className="w-6 h-6" />
             </button>
+            <button
+                onClick={onNewTrip}
+                className="flex items-center gap-2 px-3 py-1.5 bg-cyan-600/50 hover:bg-cyan-600/80 rounded-md text-sm font-semibold transition-colors"
+                title="התחל טיול חדש"
+            >
+                <PlusIcon className="w-4 h-4" />
+                <span>חדש</span>
+            </button>
           </div>
+          <h2 className="text-lg font-semibold">היסטוריית טיולים</h2>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
           {history.length === 0 ? (
             <div className="text-center text-slate-400 p-4">
-              Your generated packing lists will appear here.
+              רשימות הציוד שיצרת יופיעו כאן.
             </div>
           ) : (
             <ul>
@@ -73,7 +73,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
                 <li key={trip.id}>
                   <button
                     onClick={() => onSelectTrip(trip.id)}
-                    className={`w-full text-left p-3 my-1 rounded-lg transition-colors ${
+                    className={`w-full text-right p-3 my-1 rounded-lg transition-colors ${
                       activeTripId === trip.id
                         ? 'bg-slate-700'
                         : 'hover:bg-slate-700/50'

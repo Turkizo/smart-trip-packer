@@ -28,7 +28,7 @@ export const PackingCategoryItem: React.FC<PackingCategoryItemProps> = ({ catego
             </span>
         </div>
         <ChevronDownIcon
-          className={`w-6 h-6 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-6 h-6 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-0' : 'rotate-180'}`}
         />
       </button>
       {isOpen && (

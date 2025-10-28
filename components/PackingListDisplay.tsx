@@ -29,19 +29,19 @@ export const PackingListDisplay: React.FC<PackingListDisplayProps> = ({ list, tr
     <div className="w-full animate-fade-in flex flex-col h-full">
       <div className="mb-4 px-1">
         <div className="flex justify-between items-center mb-1 text-slate-300">
-            <h2 className="text-2xl font-bold">Your Packing List</h2>
-            <span className="font-mono text-sm">{packedCount} / {totalCount} packed</span>
+            <span className="font-mono text-sm">{packedCount} / {totalCount} נארז</span>
+            <h2 className="text-2xl font-bold">רשימת הציוד שלך</h2>
         </div>
-        <p className="text-slate-400 mb-3 text-sm italic">For: "{tripDescription}"</p>
+        <p className="text-slate-400 mb-3 text-sm italic">עבור: "{tripDescription}"</p>
         <div className="w-full bg-slate-700 rounded-full h-2.5">
           <div
-            className="bg-gradient-to-r from-cyan-500 to-indigo-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+            className="bg-gradient-to-l from-cyan-500 to-indigo-500 h-2.5 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
       </div>
 
-      <div className="space-y-3 flex-grow overflow-y-auto pr-2 mb-4">
+      <div className="space-y-3 flex-grow overflow-y-auto pl-2 mb-4">
         {list.map((category, categoryIndex) => (
           <PackingCategoryItem
             key={category.id}
@@ -58,7 +58,7 @@ export const PackingListDisplay: React.FC<PackingListDisplayProps> = ({ list, tr
             onClick={onReset}
             className="px-6 py-2 bg-slate-700/50 text-slate-400 text-sm font-semibold rounded-lg hover:bg-slate-700 transition-colors"
             >
-            Start New Trip
+            התחל טיול חדש
             </button>
         </div>
       </div>

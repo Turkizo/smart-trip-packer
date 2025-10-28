@@ -170,15 +170,19 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error("Failed to load or parse history from localStorage", err);
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      // Keep the corrupted data in storage, don't delete it
+      // This way users can recover it manually if needed
     }
   }, []);
 
   useEffect(() => {
-    if (tripHistory.length > 0) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tripHistory));
-    } else {
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
+    try {
+      if (tripHistory.length > 0) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tripHistory));
+      }
+      // Don't remove item when empty, in case of temporary state issues
+    } catch (err) {
+      console.error("Failed to save history to localStorage", err);
     }
   }, [tripHistory]);
 
@@ -187,14 +191,14 @@ const App: React.FC = () => {
     setActiveTripId(null);
     setError(null);
     try {
-      setLoadingMessage('Analyzing your trip to select the right gear...');
+      setLoadingMessage('בודק את הטיול שלך לבחירת הציוד הנכון...');
       const templateNames = Object.keys(USER_PACKING_TEMPLATES);
       const selectedTemplateNames = await selectRelevantTemplates(tripDescription, templateNames);
       
       if (selectedTemplateNames.length === 0) {
         selectedTemplateNames.push("תמיד");
       }
-      setLoadingMessage(`Using templates: ${selectedTemplateNames.join(', ')}`);
+      setLoadingMessage(`משתמש בתבניות: ${selectedTemplateNames.join(', ')}`);
 
       const baseListMap = new Map<string, RawPackingItem[]>();
       selectedTemplateNames.forEach(templateName => {
@@ -210,7 +214,7 @@ const App: React.FC = () => {
       });
       const baseList: RawPackingCategory[] = Array.from(baseListMap.entries()).map(([category, items]) => ({ category, items }));
 
-      setLoadingMessage('Checking for any extras you might need...');
+      setLoadingMessage('בודק פריטים נוספים שכנראה תצטרך...');
       const aiSuggestions = await generatePackingList(tripDescription, baseList);
 
       const mergedListMap = new Map<string, { category: string; items: RawPackingItem[] }>();
@@ -256,8 +260,8 @@ const App: React.FC = () => {
       setActiveTripId(newTrip.id);
       setAppState('results');
     } catch (err) {
-      console.error(err);
-      setError('Sorry, we couldn\'t pack your list right now. The model might be busy. Please try again in a moment.');
+        console.error(err);
+      setError('סליחה, לא הצלחנו ליצור את הרשימה כרגע. המודל כנראה עסוק. אנא נסה שוב בעוד רגע.');
       setAppState('error');
     }
   }, []);
@@ -301,7 +305,7 @@ const App: React.FC = () => {
           );
       } catch (err) {
           console.error(err);
-          setError('Sorry, we couldn\'t update your list. Please try again.');
+          setError('סליחה, לא הצלחנו לעדכן את הרשימה. אנא נסה שוב.');
           // Optionally, show a toast or small error message near the input
       } finally {
           setIsRefining(false);
@@ -342,7 +346,7 @@ const App: React.FC = () => {
         return (
           <div className="text-center flex flex-col items-center justify-center h-full p-8">
             <SpinnerIcon className="w-12 h-12 mb-4" />
-            <h2 className="text-xl font-semibold text-slate-300">Building your list...</h2>
+            <h2 className="text-xl font-semibold text-slate-300">בונה את הרשימה שלך...</h2>
             <p className="text-slate-400">{loadingMessage}</p>
           </div>
         );
@@ -360,13 +364,13 @@ const App: React.FC = () => {
       case 'error':
         return (
           <div className="text-center p-8 bg-red-900/20 border border-red-500 rounded-lg">
-            <h2 className="text-xl font-semibold text-red-400">An Error Occurred</h2>
+            <h2 className="text-xl font-semibold text-red-400">אירעה שגיאה</h2>
             <p className="text-slate-300 mt-2 mb-4">{error}</p>
             <button
               onClick={handleNewTrip}
               className="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-md font-semibold transition-colors"
             >
-              Start New Trip
+              התחל טיול חדש
             </button>
           </div>
         );
@@ -377,11 +381,11 @@ const App: React.FC = () => {
             <header className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3 mb-2">
                     <SparklesIcon className="w-8 h-8 text-cyan-400"/>
-                    <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-cyan-400 to-indigo-500 text-transparent bg-clip-text">
+                    <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-l from-cyan-400 to-indigo-500 text-transparent bg-clip-text">
                         Smart Trip Packer
                     </h1>
                 </div>
-                <p className="text-lg text-slate-400">Your AI-powered packing assistant</p>
+                <p className="text-lg text-slate-400">עוזר האריזה החכם שלך</p>
             </header>
             <TripInputForm onSubmit={handleGenerateList} isLoading={false} />
           </div>
@@ -391,6 +395,26 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-900 font-sans text-white">
+      <div className="flex-1 flex flex-col overflow-y-auto relative">
+        {!isSidebarOpen && (
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute top-4 right-4 z-20 p-2 bg-slate-800/50 hover:bg-slate-700 rounded-md transition-colors"
+            aria-label="פתח היסטוריית טיולים"
+          >
+            <MenuIcon className="w-6 h-6"/>
+          </button>
+        )}
+        <div className="flex-grow flex flex-col items-center p-4 sm:p-6 lg:p-8">
+            <div className="w-full max-w-4xl mx-auto flex-grow flex flex-col">
+                <main className="bg-slate-800/50 rounded-2xl shadow-2xl shadow-slate-950/50 border border-slate-700/50 flex-grow flex flex-col">
+                    <div className="p-6 md:p-8 min-h-[400px] flex-grow flex items-center justify-center">
+                        {renderContent()}
+                    </div>
+                </main>
+            </div>
+        </div>
+      </div>
       <HistorySidebar
         history={tripHistory}
         activeTripId={activeTripId}
@@ -399,29 +423,6 @@ const App: React.FC = () => {
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />
-      <div className="flex-1 flex flex-col overflow-y-auto relative">
-        <button 
-          onClick={() => setIsSidebarOpen(true)}
-          className="md:hidden absolute top-4 left-4 z-20 p-2 bg-slate-800/50 rounded-md"
-          aria-label="Open history menu"
-        >
-          <MenuIcon className="w-6 h-6"/>
-        </button>
-        <div className="flex-grow flex flex-col items-center p-4 sm:p-6 lg:p-8">
-            <div className="w-full max-w-4xl mx-auto flex-grow flex flex-col">
-                <main className="bg-slate-800/50 rounded-2xl shadow-2xl shadow-slate-950/50 border border-slate-700/50 flex-grow flex flex-col">
-                    <div className="p-6 md:p-8 min-h-[400px] flex-grow flex items-center justify-center">
-                        {renderContent()}
-                    </div>
-                </main>
-                 {(appState === 'initial' || appState === 'error') && (
-                    <footer className="text-center mt-8 text-slate-500 text-sm">
-                        <p>Powered by Gemini API</p>
-                    </footer>
-                )}
-            </div>
-        </div>
-      </div>
     </div>
   );
 };

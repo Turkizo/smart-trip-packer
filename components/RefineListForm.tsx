@@ -28,8 +28,8 @@ export const RefineListForm: React.FC<RefineListFormProps> = ({ onSubmit, isLoad
         type="text"
         value={request}
         onChange={(e) => setRequest(e.target.value)}
-        placeholder="Add, remove, or change items..."
-        className="flex-grow p-3 bg-slate-900 border-2 border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-slate-200 placeholder-slate-500"
+        placeholder="הוסף, הסר או שנה פריטים..."
+        className="flex-grow p-3 bg-slate-900 border-2 border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-slate-200 placeholder-slate-500 text-right"
         disabled={isLoading}
       />
       <button

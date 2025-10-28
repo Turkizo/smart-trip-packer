@@ -26,8 +26,8 @@ export const TripInputForm: React.FC<TripInputFormProps> = ({ onSubmit, isLoadin
         id="trip-description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Describe your trip... e.g., 'A 7-day hiking trip in the mountains in autumn' or 'A weekend beach trip to Miami with kids'"
-        className="w-full h-32 p-4 bg-slate-900 border-2 border-slate-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors text-slate-200 placeholder-slate-500 resize-none"
+        placeholder="תאר את הטיול שלך... למשל: 'טיול הליכה של 7 ימים בהרים בסתיו' או 'טיול סוף שבוע בחוף עם ילדים'"
+        className="w-full h-32 p-4 bg-slate-900 border-2 border-slate-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors text-slate-200 placeholder-slate-500 resize-none text-right"
         disabled={isLoading}
       />
       <button
@@ -38,10 +38,10 @@ export const TripInputForm: React.FC<TripInputFormProps> = ({ onSubmit, isLoadin
         {isLoading ? (
           <>
             <SpinnerIcon className="w-5 h-5" />
-            Generating...
+            יוצר רשימה...
           </>
         ) : (
-          'Generate Packing List'
+          'צור רשימת ציוד'
         )}
       </button>
     </form>
