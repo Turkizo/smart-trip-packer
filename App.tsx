@@ -1,14 +1,15 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TripInputForm } from './components/TripInputForm';
 import { PackingListDisplay } from './components/PackingListDisplay';
-import { generatePackingList, selectRelevantTemplates, refinePackingList } from './services/geminiService';
-import type { PackingList, RawPackingCategory, RawPackingItem, TripHistory, TripHistoryItem } from './types';
+import { ClarificationQuestionsForm } from './components/ClarificationQuestionsForm';
+import { generatePackingList, selectRelevantTemplates, refinePackingList, generateClarificationQuestions } from './services/geminiService';
+import type { PackingList, RawPackingCategory, RawPackingItem, TripHistory, TripHistoryItem, ClarificationQuestion, ClarificationAnswer } from './types';
 import { SpinnerIcon } from './components/icons/SpinnerIcon';
 import { SparklesIcon } from './components/icons/SparklesIcon';
 import { HistorySidebar } from './components/HistorySidebar';
 import { MenuIcon } from './components/icons/MenuIcon';
 
-type AppState = 'initial' | 'loading' | 'results' | 'error';
+type AppState = 'initial' | 'analyzing' | 'clarification' | 'loading' | 'results' | 'error';
 
 // The user's detailed packing lists, structured as templates for different trip types.
 const USER_PACKING_TEMPLATES: Record<string, RawPackingCategory[]> = {
@@ -154,6 +155,8 @@ const App: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
+  const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
+  const [initialTripDescription, setInitialTripDescription] = useState<string>('');
 
   const activeTrip = useMemo(() => {
     return tripHistory.find(trip => trip.id === activeTripId) || null;
@@ -186,9 +189,8 @@ const App: React.FC = () => {
     }
   }, [tripHistory]);
 
-  const handleGenerateList = useCallback(async (tripDescription: string) => {
+  const generateListWithDescription = useCallback(async (tripDescription: string) => {
     setAppState('loading');
-    setActiveTripId(null);
     setError(null);
     try {
       setLoadingMessage('בודק את הטיול שלך לבחירת הציוד הנכון...');
@@ -266,6 +268,48 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleInitialSubmit = useCallback(async (tripDescription: string) => {
+    setAppState('analyzing');
+    setActiveTripId(null);
+    setError(null);
+    setInitialTripDescription(tripDescription);
+    
+    try {
+      // First, check if we need clarification questions
+      const questions = await generateClarificationQuestions(tripDescription);
+      
+      if (questions.length > 0) {
+        setClarificationQuestions(questions);
+        setAppState('clarification');
+      } else {
+        // No questions needed, proceed directly to generation
+        await generateListWithDescription(tripDescription);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('סליחה, אירעה שגיאה בניתוח הטיול. אנא נסה שוב.');
+      setAppState('error');
+    }
+  }, [generateListWithDescription]);
+
+  const handleClarificationSubmit = useCallback(async (answers: ClarificationAnswer[]) => {
+    // Build enhanced description with answers
+    let enhancedDescription = initialTripDescription + '\n\nפרטים נוספים:';
+    
+    clarificationQuestions.forEach(question => {
+      const answer = answers.find(a => a.questionId === question.id);
+      if (answer) {
+        enhancedDescription += `\n- ${question.question} ${answer.answer ? 'כן' : 'לא'}`;
+      }
+    });
+    
+    await generateListWithDescription(enhancedDescription);
+  }, [initialTripDescription, clarificationQuestions, generateListWithDescription]);
+
+  const handleSkipClarification = useCallback(async () => {
+    await generateListWithDescription(initialTripDescription);
+  }, [initialTripDescription, generateListWithDescription]);
+
   const handleRefineList = useCallback(async (refinementRequest: string) => {
       if (!activeTrip) return;
       setIsRefining(true);
@@ -331,6 +375,8 @@ const App: React.FC = () => {
     setActiveTripId(null);
     setError(null);
     setIsSidebarOpen(false);
+    setClarificationQuestions([]);
+    setInitialTripDescription('');
   }, []);
 
   const handleSelectTrip = useCallback((tripId: string) => {
@@ -342,6 +388,23 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (appState) {
+      case 'analyzing':
+        return (
+          <div className="text-center flex flex-col items-center justify-center h-full p-8">
+            <SpinnerIcon className="w-12 h-12 mb-4" />
+            <h2 className="text-xl font-semibold text-slate-300">מנתח את הטיול שלך...</h2>
+            <p className="text-slate-400">בודק אם יש צורך בפרטים נוספים</p>
+          </div>
+        );
+      case 'clarification':
+        return (
+          <ClarificationQuestionsForm
+            questions={clarificationQuestions}
+            onSubmit={handleClarificationSubmit}
+            onSkip={handleSkipClarification}
+            isLoading={false}
+          />
+        );
       case 'loading':
         return (
           <div className="text-center flex flex-col items-center justify-center h-full p-8">
@@ -387,7 +450,7 @@ const App: React.FC = () => {
                 </div>
                 <p className="text-lg text-slate-400">עוזר האריזה החכם שלך</p>
             </header>
-            <TripInputForm onSubmit={handleGenerateList} isLoading={false} />
+            <TripInputForm onSubmit={handleInitialSubmit} isLoading={false} />
           </div>
         );
     }

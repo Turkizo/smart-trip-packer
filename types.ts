@@ -28,3 +28,14 @@ export interface TripHistoryItem {
 }
 
 export type TripHistory = TripHistoryItem[];
+
+export interface ClarificationQuestion {
+  id: string;
+  question: string;
+  type: 'yes_no' | 'text';
+}
+
+export interface ClarificationAnswer {
+  questionId: string;
+  answer: boolean | string;
+}

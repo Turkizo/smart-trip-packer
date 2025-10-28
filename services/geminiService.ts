@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { RawPackingCategory, PackingList, RawPackingItem } from '../types';
+import type { RawPackingCategory, PackingList, RawPackingItem, ClarificationQuestion } from '../types';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable is not set.");
@@ -187,5 +187,87 @@ Instructions:
   } catch (error) {
     console.error("Error refining packing list:", error);
     throw new Error("Failed to refine packing list from Gemini API.");
+  }
+};
+
+const clarificationQuestionsSchema = {
+  type: Type.OBJECT,
+  properties: {
+    needsClarification: {
+      type: Type.BOOLEAN,
+      description: 'Whether clarification questions are needed for this trip description.'
+    },
+    questions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: {
+            type: Type.STRING,
+            description: 'A unique identifier for this question (e.g., "q1", "q2", etc.)'
+          },
+          question: {
+            type: Type.STRING,
+            description: 'The clarification question in Hebrew'
+          },
+          type: {
+            type: Type.STRING,
+            enum: ['yes_no'],
+            description: 'The type of question - use yes_no for binary questions'
+          }
+        },
+        required: ['id', 'question', 'type']
+      },
+      description: 'An array of clarification questions, empty if no clarification is needed'
+    }
+  },
+  required: ['needsClarification', 'questions']
+};
+
+export const generateClarificationQuestions = async (tripDescription: string): Promise<ClarificationQuestion[]> => {
+  try {
+    const prompt = `אתה עוזר תכנון טיולים. משתמש נתן את תיאור הטיול הבא:
+
+"${tripDescription}"
+
+תפקידך לנתח את התיאור ולקבוע אם יש צורך בשאלות הבהרה כדי ליצור רשימת ציוד מדויקת יותר.
+
+שאלות נפוצות להבהרה:
+- האם נוסעים עם ילדים? (בעיקר אם לא מוזכר במפורש)
+- האם יהיה לינה בלילה? (אם לא ברור מהתיאור)
+- האם זה טיול במים/ים/אגם? (אם לא ברור)
+- האם מתוכנן קמפינג או לינה באוהל? (אם לא ברור)
+- האם זה טיסה לחו"ל? (אם לא ברור)
+- האם מתוכנן בישול בשטח? (אם רלוונטי)
+
+חשוב:
+- שאל רק שאלות רלוונטיות לטיול המתואר
+- אם התיאור מפורט מספיק, החזר needsClarification: false ורשימה ריקה
+- אם התיאור קצר או חסר פרטים, שאל עד 5 שאלות חשובות
+- כל השאלות חייבות להיות בעברית
+- השתמש בשאלות כן/לא בלבד (type: "yes_no")`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: clarificationQuestionsSchema,
+        systemInstruction: "אתה עוזר AI שיוצר שאלות הבהרה לתכנון טיולים. תחזיר JSON עם needsClarification (boolean) ו-questions (array).",
+      },
+    });
+
+    const jsonText = response.text.trim();
+    const parsed = JSON.parse(jsonText);
+    
+    if (!parsed.needsClarification || !Array.isArray(parsed.questions)) {
+      return [];
+    }
+
+    return parsed.questions as ClarificationQuestion[];
+  } catch (error) {
+    console.error("Error generating clarification questions:", error);
+    // If there's an error, continue without clarification questions
+    return [];
   }
 };
